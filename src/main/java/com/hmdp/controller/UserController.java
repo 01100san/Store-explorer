@@ -68,7 +68,6 @@ public class UserController {
     public Result me(){
         // 获取当前登录的用户并返回
         UserDTO user = UserHolder.getUser();
-        //return Result.fail("功能未完成");
         return Result.ok(user);
     }
 
