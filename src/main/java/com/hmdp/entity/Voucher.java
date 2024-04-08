@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  *  包含秒杀券和普通优惠券（SeckillVoucher，Voucher）
  * </p>
  *
- * @author 虎哥
+ * @author zhl
  * @since 2021-12-22
  */
 @Data
