@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 /**
  * <p>
- * 
+ *  包含秒杀券和普通优惠券（SeckillVoucher，Voucher）
  * </p>
  *
  * @author 虎哥

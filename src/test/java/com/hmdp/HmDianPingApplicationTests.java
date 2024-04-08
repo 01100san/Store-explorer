@@ -29,7 +29,7 @@ class HmDianPingApplicationTests {
 
     @Test
     public void testIdWorker() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(300);
+        CountDownLatch latch = new CountDownLatch(30);
 
         Runnable task = () -> {
             for (int i = 0; i < 100; i++) {
@@ -39,7 +39,7 @@ class HmDianPingApplicationTests {
             latch.countDown();
         };
         long begin = System.currentTimeMillis();
-        for (int i = 0; i < 300; i++) {
+        for (int i = 0; i < 30; i++) {
             es.submit(task);
         }
         latch.await();

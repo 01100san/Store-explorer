@@ -1,9 +1,9 @@
 package com.hmdp.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -12,12 +12,13 @@ import java.time.format.DateTimeFormatter;
  * ClassName: RedisIdWorker
  * Package: com.hmdp.utils
  * Description
- *
+ *  生成全局唯一 id
  * @Author zhl
  * @Create 2024/3/23 19:35
  * version 1.0
  */
 @Component
+@Slf4j
 public class RedisIdWorker {
     /**
      * 开始时间戳
@@ -34,6 +35,11 @@ public class RedisIdWorker {
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
+    /**
+     * 唯一ID生成器
+     * @param keyPrefix
+     * @return
+     */
     public long nextId(String keyPrefix){
         // 生成时间戳
         LocalDateTime now = LocalDateTime.now();
@@ -45,8 +51,6 @@ public class RedisIdWorker {
         String date = now.format(DateTimeFormatter.ofPattern("yyyy:MM:dd"));
         // --自增长
         long count = stringRedisTemplate.opsForValue().increment("icr:" + keyPrefix + ":" + date);
-
-        // 拼接并返回
         return timeStamp << COUNT_BITS | count;
     }
 }
