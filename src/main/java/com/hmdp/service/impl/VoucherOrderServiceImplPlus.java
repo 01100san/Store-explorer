@@ -1,18 +1,22 @@
 package com.hmdp.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
-import com.hmdp.entity.SeckillVoucher;
-import com.hmdp.entity.Voucher;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.amqp.core.ExchangeTypes;
+import org.springframework.amqp.rabbit.annotation.Exchange;
+import org.springframework.amqp.rabbit.annotation.Queue;
+import org.springframework.amqp.rabbit.annotation.QueueBinding;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -22,25 +26,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
-import javax.swing.text.html.ObjectView;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.hmdp.utils.RabbitMQConstants.*;
+
 /**
- * <p>
- * 服务实现类
- * </p>
- *
+ * 使用RabbitMQ 实现消息队列
  * @author zhl
  * @since 2021-12-22
  */
 @Slf4j
-@Service
-public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
+@Service(value = "VoucherOrderServiceImplPlus")
+public class VoucherOrderServiceImplPlus extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
 
     @Autowired
     private ISeckillVoucherService seckillVoucherService;
@@ -53,10 +54,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private RedissonClient redissonClient;
+    // 使用 RabbitMQ 做消息队列
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
-    private BlockingQueue<VoucherOrder> orderTasks = new ArrayBlockingQueue<>(1024 * 1024);
-    // 使用 SingleThreadExecutor 线程池来处理订单
-    private static final ExecutorService SECKILL_ORDER_HANDLER = Executors.newSingleThreadExecutor();
 
     static {
         SECKILL_SCRIPT = new DefaultRedisScript<>();
@@ -64,25 +66,10 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         SECKILL_SCRIPT.setResultType(Long.class);
     }
 
-    @PostConstruct
-    public void init(){
-        SECKILL_ORDER_HANDLER.submit(new VoucherOrderHandler());
-    }
-
-    private class VoucherOrderHandler implements Runnable {
-        @Override
-        public void run() {
-            try {
-                // 获取队列中的订单
-                VoucherOrder voucherOrder = orderTasks.take();
-                // 创建订单
-                handleVoucherOrder(voucherOrder);
-            } catch (InterruptedException e) {
-                log.error("处理订单出错：",e);
-            }
-        }
-    }
-
+    /**
+     * 生产者处理消息
+     * @param voucherOrder
+     */
     public void handleVoucherOrder(VoucherOrder voucherOrder) {
         Long userId = voucherOrder.getUserId();
         RLock lock = redissonClient.getLock("lock:order:" + userId);
@@ -91,13 +78,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             log.error("请勿重复下单");
         }
         try {
-            proxy.createVocherOrder(voucherOrder);    // this.createVocherOrder 事务会失效
+            rabbitTemplate.convertAndSend(EXCHANGE_DIRECT,VOUCHERORDER_ROUTE_KEY,voucherOrder);
         } finally {
             lock.unlock();
         }
     }
-
-    private IVoucherOrderService proxy;
 
     @Override
     public Result secKillVoucher(Long voucherId) {
@@ -113,26 +98,29 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 Collections.emptyList(),
                 voucherId.toString(),
                 userId.toString());
-
         int r = result.intValue();
         if (r != 0) {
             return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
         }
-
         long orderId = redisIdWorker.nextId("order");
 
         VoucherOrder voucherOrder = new VoucherOrder();
         voucherOrder.setId(orderId);
         voucherOrder.setUserId(userId);
         voucherOrder.setVoucherId(voucherId);
-        // 把有购买资格的，把下单信息保存到阻塞队列
-        orderTasks.add(voucherOrder);
-        // 获取代理对象
-        proxy = (IVoucherOrderService) AopContext.currentProxy();
+        // 把有购买资格的，把下单信息保存到 RabbitMQ
+        handleVoucherOrder(voucherOrder);
         return Result.ok(orderId);
     }
 
-    @Transactional
+    /**
+     * 消费者处理优惠券订单
+     * @param voucherOrder
+     */
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue("voucherOrder.queue1"),
+            exchange = @Exchange(name = EXCHANGE_DIRECT, type = ExchangeTypes.DIRECT),
+            key = {VOUCHERORDER_ROUTE_KEY}))
     @Override
     public void createVocherOrder(VoucherOrder voucherOrder) {
         Long userId = voucherOrder.getUserId();
@@ -152,49 +140,5 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
         // 订单++
         save(voucherOrder);
-
     }
-
-    /**
-     * 之前的秒杀逻辑
-     * 减少数据库的访问使用Redis存入lua脚本中
-     */
-//    private Result secKillVoucherOld(Long voucherId) {
-//        // 查询优惠券
-//        SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
-//        // 判断秒杀是否开始
-//        if (voucher.getBeginTime().isAfter(LocalDateTime.now())) {
-//            return Result.fail("秒杀尚未开始");
-//        }
-//        // 判断秒杀是否已经结束
-//        if (voucher.getEndTime().isBefore(LocalDateTime.now())) {
-//            return Result.fail("秒杀已经结束");
-//        }
-//        // 判断库存是否充足
-//        if (voucher.getStock() < 1) {
-//            return Result.fail("库存不足");
-//        }
-//
-//        Long userId = UserHolder.getUser().getId();
-////        SimpleRedisLock lock = new SimpleRedisLock(stringRedisTemplate, "order:" + userId);
-//        RLock lock = redissonClient.getLock("lock:order:" + userId);
-//        /*  单机部署时
-//            使用intern()一旦用户id 创建String对象，就从线程池中取出
-//            但是使用 synchronized 在服务器集群下可能有线程安全问题
-//         */
-////        synchronized (userId.toString().intern()) {
-//        // 通过 Redisson 获取分布式锁
-//        boolean isLock = lock.tryLock();
-//        if (!isLock){
-//            return Result.fail("请勿重复下单");
-//        }
-//        try {
-//            // 获取代理对象, 防止事务失效, Spring 中的事务是Spring 创建的代理对象管理的
-//            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-//            return proxy.createVocherOrder(voucherId);    // this.createVocherOrder 事务会失效
-//        } finally {
-//            lock.unlock();
-//        }
-////        }
-//    }
 }

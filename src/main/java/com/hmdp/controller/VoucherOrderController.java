@@ -4,6 +4,7 @@ package com.hmdp.controller;
 import com.hmdp.dto.Result;
 import com.hmdp.service.IVoucherOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,8 @@ import javax.annotation.Resource;
 @RestController
 @RequestMapping("/voucher-order")
 public class VoucherOrderController {
+    // 注入以 RabbitMQ 的方式实现消息队列
+    @Qualifier(value = "VoucherOrderServiceImplPlus")
     @Autowired
     private IVoucherOrderService voucherOrderService;
 
