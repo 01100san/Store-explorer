@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * ClassName: LoginInterceptor
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *  拦截所有的请求路径
  * @Author zhl

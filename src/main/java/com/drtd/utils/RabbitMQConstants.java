@@ -2,7 +2,7 @@ package com.drtd.utils;
 
 /**
  * ClassName: RabbitMQConstants
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *
  * @Author zhl
@@ -10,7 +10,7 @@ package com.drtd.utils;
  * version 1.0
  */
 public class RabbitMQConstants {
-    public static final String EXCHANGE_FANTOUT = "hmdp.fanout";
-    public static final String EXCHANGE_DIRECT = "hmdp.direct";
+    public static final String EXCHANGE_FANTOUT = "drtd.fanout";
+    public static final String EXCHANGE_DIRECT = "drtd.direct";
     public static final String VOUCHERORDER_ROUTE_KEY = "voucherOrder";
 }

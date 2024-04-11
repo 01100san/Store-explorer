@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * ClassName: Redisson
- * Package: com.hmdp.config
+ * Package: com.drtd.config
  * Description
  *
  * @Author zhl

@@ -2,7 +2,7 @@ package com.drtd.utils;
 
 /**
  * ClassName: ILock
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *  分布式锁
  * @Author zhl

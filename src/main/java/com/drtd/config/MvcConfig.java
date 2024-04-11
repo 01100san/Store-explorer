@@ -10,7 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * ClassName: MvcConfig
- * Package: com.hmdp.config
+ * Package: com.drtd.config
  * Description
  *
  * @Author zhl

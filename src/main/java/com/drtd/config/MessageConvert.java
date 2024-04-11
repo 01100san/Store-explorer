@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * ClassName: MessageConvert
- * Package: com.hmdp.config
+ * Package: com.drtd.config
  * Description
  *  定义消息转换器，将 需要发送的消息对象 转成 json
  * @Author zhl

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * ClassName: RedisConfigProperties
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *
  * @Author zhl

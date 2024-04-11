@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * ClassName: LoginInterceptor
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *  判断是否有用户
  * @Author zhl

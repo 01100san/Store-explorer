@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * ClassName: SimpleRedisLock
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *
  * @Author zhl

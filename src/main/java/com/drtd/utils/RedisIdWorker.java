@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * ClassName: RedisIdWorker
- * Package: com.hmdp.utils
+ * Package: com.drtd.utils
  * Description
  *  生成全局唯一 id
  * @Author zhl
