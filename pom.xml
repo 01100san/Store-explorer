@@ -52,6 +52,7 @@
                 </exclusion>
             </exclusions>-->
         </dependency>
+        <!--目的是为了使用高版本中的geo操作-->
         <!--<dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-redis</artifactId>

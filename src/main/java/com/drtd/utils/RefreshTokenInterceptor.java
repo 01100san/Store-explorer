@@ -41,6 +41,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(tokenKey);
         // 判断用户是否存在
         if (userMap.isEmpty()){
+            // 交给下一级拦截器处理
             return true;
         }
         // 将查询到的 Hash 数据转为 UserDto 对象

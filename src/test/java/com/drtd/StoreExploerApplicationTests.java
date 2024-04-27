@@ -8,8 +8,11 @@ import com.drtd.utils.RedisIdWorker;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisGeoCommands;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import sun.security.provider.ConfigFile;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -34,6 +37,20 @@ class StoreExploerApplicationTests {
     private StringRedisTemplate stringRedisTemplate;
 
     private ExecutorService es = Executors.newFixedThreadPool(500);
+
+    /*@Test
+    public void testPipelined(){
+        stringRedisTemplate.executePipelined((RedisCallback<String>)  connection -> {
+            connection.openPipeline();
+            for (int i = 1; i <= 100000; i++) {
+                String key = "test:key_" + i;
+                String value = "value_" + i;
+                connection.stringCommands().mSet();
+                connection.stringCommands().set(key.getBytes(), value.getBytes());
+
+            }
+        });
+    }*/
 
     @Test
     public void testIdWorker() throws InterruptedException {
@@ -97,6 +114,5 @@ class StoreExploerApplicationTests {
             }
             stringRedisTemplate.opsForGeo().add(key, locations);
         }
-
     }
 }
